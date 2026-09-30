@@ -30,6 +30,42 @@ struct SizeInfo: Codable {
   }
 }
 
+struct VolumeInfo: Codable {
+  let mountPoint: String?
+
+  enum CodingKeys: String, CodingKey {
+    case mountPoint = "MountPoint"
+  }
+}
+
+struct PartitionInfo: Codable {
+  let deviceIdentifier: String
+  let content: String?
+  let volumeName: String?
+
+  enum CodingKeys: String, CodingKey {
+    case deviceIdentifier = "DeviceIdentifier"
+    case content = "Content"
+    case volumeName = "VolumeName"
+  }
+}
+
+private struct DiskList: Codable {
+  struct Disk: Codable {
+    let partitions: [PartitionInfo]?
+
+    enum CodingKeys: String, CodingKey {
+      case partitions = "Partitions"
+    }
+  }
+
+  let allDisksAndPartitions: [Disk]
+
+  enum CodingKeys: String, CodingKey {
+    case allDisksAndPartitions = "AllDisksAndPartitions"
+  }
+}
+
 struct Diskutil {
   static func imageCreate(diskURL: URL, sizeGB: UInt16) throws {
     do {
@@ -60,49 +96,35 @@ struct Diskutil {
     }
   }
 
-  private static func run(_ arguments: [String]) throws -> (Data, Data) {
-    guard let diskutilURL = resolveBinaryPath("diskutil") else {
-      throw RuntimeError.Generic("\"diskutil\" binary is not found in PATH")
-    }
-
-    let process = Process()
-    process.executableURL = diskutilURL
-    process.arguments = arguments
-
-    let stdoutPipe = Pipe()
-    process.standardOutput = stdoutPipe
-    let stderrPipe = Pipe()
-    process.standardError = stderrPipe
-
-    do {
-      try process.run()
-    } catch {
-      throw RuntimeError.Generic("\"\(arguments.joined(separator: " "))\" failed: \(error)")
-    }
-    process.waitUntilExit()
-
-    let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-    let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-
-    if process.terminationStatus != 0 {
-      let stdoutString = String(data: stdoutData, encoding: .utf8) ?? ""
-      let stderrString = String(data: stderrData, encoding: .utf8) ?? ""
-
-      throw RuntimeError.Generic("\"\(arguments.joined(separator: " "))\" failed with exit code \(process.terminationStatus): \(firstNonEmptyLine(stderrString, stdoutString))")
-    }
-
-    return (stdoutData, stderrData)
+  // On disks larger than a few gigabytes, this also creates an EFI system partition in front
+  static func partitionDisk(_ device: String, format: String, name: String) throws {
+    _ = try run(["partitionDisk", device, "1", "GPT", format, name, "R"])
   }
 
-  private static func firstNonEmptyLine(_ outputs: String...) -> String {
-    for output in outputs {
-      for line in output.split(separator: "\n", omittingEmptySubsequences: false) {
-        if !line.isEmpty {
-          return String(line)
-        }
-      }
+  static func partitions(of device: String) throws -> [PartitionInfo] {
+    let (stdoutData, _) = try run(["list", "-plist", device])
+
+    return try PropertyListDecoder().decode(DiskList.self, from: stdoutData).allDisksAndPartitions.first?.partitions ?? []
+  }
+
+  static func unmountDisk(_ device: String) throws {
+    _ = try run(["unmountDisk", device])
+  }
+
+  // Mounts a volume without showing it in Finder
+  static func mount(_ device: String) throws -> URL {
+    _ = try run(["mount", "nobrowse", device])
+
+    let (stdoutData, _) = try run(["info", "-plist", device])
+    let info = try PropertyListDecoder().decode(VolumeInfo.self, from: stdoutData)
+    guard let mountPoint = info.mountPoint, !mountPoint.isEmpty else {
+      throw RuntimeError.Generic("\(device) has no mount point after mounting it")
     }
 
-    return ""
+    return URL(fileURLWithPath: mountPoint, isDirectory: true)
+  }
+
+  private static func run(_ arguments: [String]) throws -> (Data, Data) {
+    try runTool("diskutil", arguments)
   }
 }

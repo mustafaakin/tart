@@ -22,3 +22,6 @@ dist/
 
 # mkdocs-material
 site
+
+# Built by Resources/Windows/Makefile and embedded into Sources/tart/Windows/WindowsResources.swift
+Resources/Windows/*.efi

@@ -13,6 +13,9 @@ struct Create: AsyncParsableCommand {
   @Option(help: ArgumentHelp("create a macOS VM using path to the IPSW file or URL (or \"latest\", to fetch the latest supported IPSW automatically)", valueName: "path"), completion: .file())
   var fromIPSW: String?
 
+  @Option(help: ArgumentHelp("create a Windows VM by installing Windows 11 on ARM from an ISO file", valueName: "path"), completion: .file())
+  var fromISO: String?
+
   @Flag(help: "create a Linux VM")
   var linux: Bool = false
 
@@ -23,11 +26,14 @@ struct Create: AsyncParsableCommand {
   var diskFormat: DiskImageFormat = .raw
 
   func validate() throws {
-    if fromIPSW == nil && !linux {
-      throw ValidationError("Please specify either a --from-ipsw or --linux option!")
+    if [fromIPSW != nil, fromISO != nil, linux].filter({ $0 }).count != 1 {
+      throw ValidationError("Please specify exactly one of the --from-ipsw, --from-iso or --linux options!")
+    }
+    if let fromISO = fromISO, !FileManager.default.fileExists(atPath: NSString(string: fromISO).expandingTildeInPath) {
+      throw ValidationError("ISO file \"\(fromISO)\" does not exist")
     }
     #if arch(x86_64)
-      if fromIPSW != nil {
+      if fromIPSW != nil || fromISO != nil {
         throw ValidationError("Only Linux VMs are supported on Intel!")
       }
     #endif
@@ -67,6 +73,12 @@ struct Create: AsyncParsableCommand {
           }
 
           _ = try await VM(vmDir: tmpVMDir, ipswURL: ipswURL, diskSizeGB: diskSize, diskFormat: diskFormat)
+        }
+
+        if let fromISO = fromISO {
+          let isoURL = URL(fileURLWithPath: NSString(string: fromISO).expandingTildeInPath)
+
+          try await WindowsInstaller(isoURL: isoURL).install(vmDir: tmpVMDir, diskSizeGB: diskSize, diskFormat: diskFormat)
         }
       #endif
 

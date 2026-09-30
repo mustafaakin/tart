@@ -43,3 +43,58 @@ func resolveBinaryPath(_ name: String) -> URL? {
 
   return nil
 }
+
+func runTool(_ name: String, _ arguments: [String]) throws -> (Data, Data) {
+  guard let toolURL = resolveBinaryPath(name) else {
+    throw RuntimeError.Generic("\"\(name)\" binary is not found in PATH")
+  }
+
+  let process = Process()
+  process.executableURL = toolURL
+  process.arguments = arguments
+
+  let stdoutPipe = Pipe()
+  process.standardOutput = stdoutPipe
+  let stderrPipe = Pipe()
+  process.standardError = stderrPipe
+
+  let commandLine = ([name] + arguments).joined(separator: " ")
+
+  do {
+    try process.run()
+  } catch {
+    throw RuntimeError.Generic("\"\(commandLine)\" failed: \(error)")
+  }
+
+  // Drain both pipes while the tool runs, as it blocks once either pipe's buffer is full
+  var stderrData = Data()
+  let stderrDrained = DispatchSemaphore(value: 0)
+  DispatchQueue.global().async {
+    stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+    stderrDrained.signal()
+  }
+  let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+  stderrDrained.wait()
+  process.waitUntilExit()
+
+  if process.terminationStatus != 0 {
+    let stdoutString = String(data: stdoutData, encoding: .utf8) ?? ""
+    let stderrString = String(data: stderrData, encoding: .utf8) ?? ""
+
+    throw RuntimeError.Generic("\"\(commandLine)\" failed with exit code \(process.terminationStatus): \(firstNonEmptyLine(stderrString, stdoutString))")
+  }
+
+  return (stdoutData, stderrData)
+}
+
+private func firstNonEmptyLine(_ outputs: String...) -> String {
+  for output in outputs {
+    for line in output.split(separator: "\n", omittingEmptySubsequences: false) {
+      if !line.isEmpty {
+        return String(line)
+      }
+    }
+  }
+
+  return ""
+}
