@@ -5,9 +5,9 @@ import SwiftUI
 import SwiftDate
 
 struct Prune: AsyncParsableCommand {
-  static var configuration = CommandConfiguration(abstract: "Prune OCI, IPSW and virtio-win caches or local VMs")
+  static var configuration = CommandConfiguration(abstract: "Prune OCI, IPSW and Windows download caches or local VMs")
 
-  @Option(help: ArgumentHelp("Entries to remove: \"caches\" targets OCI, IPSW and virtio-win caches and \"vms\" targets local VMs."), completion: .list(["caches", "vms"]))
+  @Option(help: ArgumentHelp("Entries to remove: \"caches\" targets OCI, IPSW and Windows download caches and \"vms\" targets local VMs."), completion: .list(["caches", "vms"]))
   var entries: String = "caches"
 
   @Option(help: ArgumentHelp("Remove entries that were last accessed more than n days ago",
@@ -53,7 +53,7 @@ struct Prune: AsyncParsableCommand {
 
     switch entries {
     case "caches":
-      prunableStorages = [try VMStorageOCI(), try IPSWCache(), try VirtioWinCache()]
+      prunableStorages = [try VMStorageOCI(), try IPSWCache(), try WindowsDownloadCache()]
     case "vms":
       prunableStorages = [try VMStorageLocal()]
     default:

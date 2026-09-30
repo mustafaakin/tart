@@ -1,0 +1,11 @@
+import Foundation
+
+// WinFsp, the file system framework the virtio-fs service needs to share directories with Windows guests
+enum WinFsp {
+  static let msiURL = URL(string: "https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi")!
+  static let msiDigest = "sha256:073a70e00f77423e34bed98b86e600def93393ba5822204fac57a29324db9f7a"
+
+  static func retrieveMSI() async throws -> URL {
+    try await WindowsDownloadCache().retrieve(msiURL, digest: msiDigest, name: "WinFsp")
+  }
+}

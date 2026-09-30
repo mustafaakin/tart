@@ -49,6 +49,11 @@ echo [%time%] applying image %IMAGE% >> %LOG%
 dism /Apply-Image /ImageFile:%WIM% %IMAGE% /ApplyDir:W:\ /Compact >> %LOG% 2>&1 || goto fail
 dism /Image:W:\ /Add-Driver /Driver:%T%\drivers /Recurse >> %LOG% 2>&1 || goto fail
 
+rem Directory sharing (virtio-fs service + WinFsp), set up by SetupComplete.cmd.
+mkdir W:\ProgramData\Tart 2>nul
+copy /y %T%\drivers\viofs\virtiofs.exe W:\ProgramData\Tart\ >> %LOG% || goto fail
+copy /y %T%\winfsp.msi W:\ProgramData\Tart\ >> %LOG% || goto fail
+
 mkdir W:\Windows\Panther W:\Windows\Setup\Scripts 2>nul
 copy /y %M%\autounattend.xml W:\Windows\Panther\unattend.xml >> %LOG% || goto fail
 copy /y %T%\SetupComplete.cmd W:\Windows\Setup\Scripts\ >> %LOG% || goto fail

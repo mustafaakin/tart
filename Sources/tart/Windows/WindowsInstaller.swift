@@ -11,6 +11,7 @@ struct WindowsInstaller {
     try WindowsInstallationMedia.validate(isoURL)
 
     let virtioWinISO = try await VirtioWin.retrieveISO()
+    let winFspMSI = try await WinFsp.retrieveMSI()
 
     defaultLogger.appendNewLine("Creating Windows installation media...")
 
@@ -25,7 +26,7 @@ struct WindowsInstaller {
     defer { withExtendedLifetime(mediaLock) {} }
 
     let media = try WindowsInstallationMedia.create(at: mediaDir.appendingPathComponent("windows.img"),
-                                                    windowsISO: isoURL, virtioWinISO: virtioWinISO)
+                                                    windowsISO: isoURL, virtioWinISO: virtioWinISO, winFspMSI: winFspMSI)
 
     _ = try VZEFIVariableStore(creatingVariableStoreAt: vmDir.nvramURL)
     try vmDir.resizeDisk(diskSizeGB, format: diskFormat)

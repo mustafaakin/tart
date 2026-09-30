@@ -4,7 +4,7 @@ import Foundation
 //
 // Its EFI system partition holds a loader that starts the framebuffer driver before Windows Boot Manager.
 // The second partition is exFAT, because install.wim doesn't fit FAT32, and holds the ISO's contents, the
-// drivers and the setup files, which install Windows and report the result in tart\result.
+// drivers, WinFsp and the setup files, which install Windows and report the result in tart\result.
 struct WindowsInstallationMedia {
   let url: URL
 
@@ -28,7 +28,7 @@ struct WindowsInstallationMedia {
     }
   }
 
-  static func create(at url: URL, windowsISO: URL, virtioWinISO: URL) throws -> WindowsInstallationMedia {
+  static func create(at url: URL, windowsISO: URL, virtioWinISO: URL, winFspMSI: URL) throws -> WindowsInstallationMedia {
     // Room for the ISO's contents, the drivers and the EFI system partition
     let isoSize = try windowsISO.resourceValues(forKeys: [.fileSizeKey]).fileSize!
     FileManager.default.createFile(atPath: url.path, contents: nil)
@@ -38,7 +38,7 @@ struct WindowsInstallationMedia {
 
     let disk = try Hdiutil.attach(url, mount: false, raw: true)[0].devEntry
     do {
-      try populate(disk, windowsISO: windowsISO, virtioWinISO: virtioWinISO)
+      try populate(disk, windowsISO: windowsISO, virtioWinISO: virtioWinISO, winFspMSI: winFspMSI)
     } catch {
       try? Hdiutil.detach(disk)
       throw error
@@ -71,7 +71,7 @@ struct WindowsInstallationMedia {
     throw RuntimeError.Generic("Windows installation failed:\n\(lastLines)")
   }
 
-  private static func populate(_ disk: String, windowsISO: URL, virtioWinISO: URL) throws {
+  private static func populate(_ disk: String, windowsISO: URL, virtioWinISO: URL, winFspMSI: URL) throws {
     try Diskutil.partitionDisk(disk, format: "ExFAT", name: "TART")
     let partitions = try Diskutil.partitions(of: disk)
     guard let efiSystemPartitionInfo = partitions.first(where: { $0.content == "EFI" }),
@@ -95,6 +95,7 @@ struct WindowsInstallationMedia {
                                      to: dataPartition.appendingPathComponent("efi/boot/windows.efi"))
 
     try VirtioWin.copyDrivers(from: virtioWinISO, to: dataPartition.appendingPathComponent("tart/drivers", isDirectory: true))
+    try FileManager.default.copyItem(at: winFspMSI, to: dataPartition.appendingPathComponent("tart/winfsp.msi"))
 
     try write(WindowsResources.efiSystemPartition, to: efiSystemPartition)
     try write(WindowsResources.dataPartition, to: dataPartition)

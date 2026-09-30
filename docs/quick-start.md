@@ -160,7 +160,7 @@ tart run windows
 
 The installation takes about 15 minutes, a good part of which Windows spends checking for updates. It installs Windows 11 Pro with an `admin` user and an `admin` password, which signs in automatically like tart's other images do. Remote Desktop and SSH are enabled, so once the VM is running you can connect with `ssh admin@$(tart ip windows)`.
 
-Drivers for the virtual storage, display, network and entropy devices come from the [virtio-win](https://github.com/virtio-win/virtio-win-pkg-scripts) project. Tart downloads them on the first installation and keeps them in its cache.
+Drivers for the virtual storage, display, network, entropy and directory sharing devices come from the [virtio-win](https://github.com/virtio-win/virtio-win-pkg-scripts) project (BSD-3-Clause), and directory sharing also needs [WinFsp](https://winfsp.dev) (GPLv3 with a FLOSS exception). Tart downloads them on the first installation and keeps them in its cache.
 
 Windows support is experimental and has been tested on macOS 26 Tahoe with English Windows 11 ISOs. The installation sets the language and locale to English (United States), so ISOs in other languages may not work. Other limitations:
 
@@ -237,6 +237,12 @@ The directory we've mounted above will be accessible from the `/mnt/shared/proje
     ```shell
     com.apple.virtio-fs.automount /mnt/shared virtiofs rw,relatime 0 0
     ```
+
+### Accessing mounted directories in Windows guests
+
+Windows VMs created with `tart create --from-iso` mount the shared directories as a drive, `Z:` by default, using the virtio-fs service from virtio-win and WinFsp.
+
+The directory we've mounted above will be accessible as `Z:\project` inside a guest VM.
 
 ## Working with a Remote OCI Container Registry
 
