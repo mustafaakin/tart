@@ -30,6 +30,9 @@ enum CodingKeys: String, CodingKey {
   // macOS-specific keys
   case ecid
   case hardwareModel
+
+  // Windows-specific keys
+  case machineIdentifier
 }
 
 struct VMDisplayConfig: Codable, Equatable {
@@ -121,6 +124,8 @@ struct VMConfig: Codable {
       #endif
     case .linux:
       platform = try Linux(from: decoder)
+    case .windows:
+      platform = try Windows(from: decoder)
     }
     cpuCountMin = try container.decode(Int.self, forKey: .cpuCountMin)
     cpuCount = try container.decode(Int.self, forKey: .cpuCount)

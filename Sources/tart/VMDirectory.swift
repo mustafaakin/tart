@@ -224,6 +224,14 @@ struct VMDirectory: Prunable {
     var vmConfig = try VMConfig(fromURL: configURL)
 
     vmConfig.macAddress = VZMACAddress.randomLocallyAdministered()
+
+    // A new MAC address makes this a separate machine, which for Windows
+    // also takes a new machine identifier (and thus SMBIOS UUID)
+    if var windows = vmConfig.platform as? Windows {
+      windows.machineIdentifier = VZGenericMachineIdentifier()
+      vmConfig.platform = windows
+    }
+
     // cleanup state if any
     try? FileManager.default.removeItem(at: stateURL)
 
