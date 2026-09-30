@@ -158,7 +158,7 @@ tart create --from-iso Win11_25H2_English_Arm64.iso windows
 tart run windows
 ```
 
-The installation takes about 15 minutes, a good part of which Windows spends checking for updates. It installs Windows 11 Pro with an `admin` user and an `admin` password, which signs in automatically like tart's other images do. Remote Desktop and SSH are enabled, so once the VM is running you can connect with `ssh admin@$(tart ip windows)`.
+The installation takes about 15 minutes, a good part of which Windows spends checking for updates. It installs Windows 11 Pro with an `admin` user and an `admin` password, which signs in automatically like tart's other images do. Remote Desktop and SSH are enabled, so once the VM is running you can connect with `ssh admin@$(tart ip windows)`. After `tart set --disk-size`, Windows grows the `C:` drive into the new space at the next boot.
 
 Drivers for the virtual storage, display, network, entropy and directory sharing devices come from the [virtio-win](https://github.com/virtio-win/virtio-win-pkg-scripts) project (BSD-3-Clause), and directory sharing also needs [WinFsp](https://winfsp.dev) (GPLv3 with a FLOSS exception). Tart downloads them on the first installation and keeps them in its cache.
 

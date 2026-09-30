@@ -257,6 +257,8 @@ overlay adds another ASIF file to validate and assemble at run time.
 
 Disk resizing works on most cloud-ready Linux distributions out-of-the box (e.g. Ubuntu Cloud Images have the `cloud-initramfs-growroot` package installed that runs on boot) and on the rest of the distributions by running the `growpart` or `resize2fs` commands.
 
+Windows VMs created with `tart create --from-iso` grow the `C:` drive into the new space automatically at the next boot.
+
 For macOS, however, things are a bit more complicated, and you generally have two options: automated and manual resizing.
 
 For the automated option, you can use [Packer](https://www.packer.io/) with the [Packer builder for Tart VMs](https://developer.hashicorp.com/packer/integrations/cirruslabs/tart/latest/components/builder/tart). The latter has two has configuration directives related to the disk resizing behavior:

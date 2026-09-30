@@ -10,7 +10,7 @@ OUTPUT = ../../Sources/tart/Windows/WindowsResources.swift
 # media path:source file
 EFI_SYSTEM_PARTITION = EFI/BOOT/BOOTAA64.EFI:loader.efi EFI/tart/framebuffer.efi:framebuffer.efi
 DATA_PARTITION = autounattend.xml:autounattend.xml tart/install.cmd:install.cmd \
-	tart/SetupComplete.cmd:SetupComplete.cmd tart/framebuffer.efi:framebuffer.efi
+	tart/SetupComplete.cmd:SetupComplete.cmd tart/framebuffer.efi:framebuffer.efi tart/extend-c.ps1:extend-c.ps1
 
 all: $(OUTPUT)
 

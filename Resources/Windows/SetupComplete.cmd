@@ -10,3 +10,6 @@ powershell -NoProfile -Command "Add-WindowsCapability -Online -Name OpenSSH.Serv
 rem Directory sharing ("tart run --dir"): WinFsp plus the virtio-fs service, which mounts the shares as a drive (Z:).
 msiexec /i C:\ProgramData\Tart\winfsp.msi /qn /norestart
 sc create VirtioFsSvc binpath= C:\ProgramData\Tart\virtiofs.exe start= auto depend= WinFsp.Launcher/VirtioFsDrv DisplayName= "Virtio FS Service"
+
+rem Grow C: after "tart set --disk-size", on every boot.
+schtasks /create /tn "Tart\Extend system disk" /sc onstart /ru SYSTEM /tr "powershell -NoProfile -ExecutionPolicy Bypass -File C:\ProgramData\Tart\extend-c.ps1" /f

@@ -22,7 +22,7 @@ final class WindowsInstallationMediaTests: XCTestCase {
   func testEmbeddedResources() throws {
     XCTAssertEqual(WindowsResources.efiSystemPartition.keys.sorted(), ["EFI/BOOT/BOOTAA64.EFI", "EFI/tart/framebuffer.efi"])
     XCTAssertEqual(WindowsResources.dataPartition.keys.sorted(),
-                   ["autounattend.xml", "tart/SetupComplete.cmd", "tart/framebuffer.efi", "tart/install.cmd"])
+                   ["autounattend.xml", "tart/SetupComplete.cmd", "tart/extend-c.ps1", "tart/framebuffer.efi", "tart/install.cmd"])
 
     for (path, contents) in Array(WindowsResources.efiSystemPartition) + Array(WindowsResources.dataPartition) {
       let data = try XCTUnwrap(Data(base64Encoded: contents), path)
