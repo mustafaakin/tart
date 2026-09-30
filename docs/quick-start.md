@@ -105,8 +105,8 @@ ssh admin@$(tart ip tahoe-base)
 
 ## Creating VM images
 
-Tart supports macOS and Linux virtual machines. All commands like `run` and `pull` work the same way regardless of the underlying OS a particular VM image has.
-The only difference is how such VM images are created. Please check sections below for [macOS](#creating-a-macos-vm-image-from-scratch) and [Linux](#creating-a-linux-vm-image-from-scratch) instructions.
+Tart supports macOS, Linux and, experimentally, Windows virtual machines. All commands like `run` and `pull` work the same way regardless of the underlying OS a particular VM image has.
+The only difference is how such VM images are created. Please check sections below for [macOS](#creating-a-macos-vm-image-from-scratch), [Linux](#creating-a-linux-vm-image-from-scratch) and [Windows](#creating-a-windows-vm-image-from-scratch) instructions.
 
 ### Creating a macOS VM image from scratch
 
@@ -148,6 +148,27 @@ sudo apt update
 sudo apt install -y openssh-server
 sudo ufw allow ssh
 ```
+
+### Creating a Windows VM image from scratch
+
+Tart installs Windows 11 on ARM from an [ISO file](https://www.microsoft.com/software-download/windows11arm64) without any interaction. Windows VMs require an Apple silicon host.
+
+```bash
+tart create --from-iso Win11_25H2_English_Arm64.iso windows
+tart run windows
+```
+
+The installation takes about 15 minutes, a good part of which Windows spends checking for updates. It installs Windows 11 Pro with an `admin` user and an `admin` password, which signs in automatically like tart's other images do. Remote Desktop and SSH are enabled, so once the VM is running you can connect with `ssh admin@$(tart ip windows)`.
+
+Drivers for the virtual storage, display, network and entropy devices come from the [virtio-win](https://github.com/virtio-win/virtio-win-pkg-scripts) project. Tart downloads them on the first installation and keeps them in its cache.
+
+Windows support is experimental and has been tested on macOS 26 Tahoe with English Windows 11 ISOs. The installation sets the language and locale to English (United States), so ISOs in other languages may not work. Other limitations:
+
+* The display has no GPU acceleration, and there's no audio driver.
+* Windows doesn't respond to the virtual power button, which closing the VM window presses. Shut Windows down from within instead, for example with `ssh admin@$(tart ip windows) shutdown /s /t 0`, or use `tart stop`, which stops the VM without shutting Windows down.
+* Windows only boots with two private Virtualization.framework settings enabled (PMU and fine-grained trap emulation), which future macOS versions may change. It also needs a linear framebuffer the firmware doesn't provide, so the installation adds a small UEFI driver for that.
+* Clones of a Windows VM share its computer name and security identifier (SID), because the image isn't generalized with Sysprep. This only matters when joining them to the same domain.
+* Tart doesn't activate Windows. Bring your own license.
 
 ### Configuring a VM
 
