@@ -29,7 +29,7 @@ struct WindowsInstaller {
                                                     windowsISO: isoURL, virtioWinISO: virtioWinISO, winFspMSI: winFspMSI)
 
     _ = try VZEFIVariableStore(creatingVariableStoreAt: vmDir.nvramURL)
-    try vmDir.resizeDisk(diskSizeGB, format: diskFormat)
+    try vmDir.resizeDisk(diskSizeGB, format: diskFormat, blank: true)
     let config = VMConfig(platform: Windows(), cpuCountMin: 4, memorySizeMin: 4096 * 1024 * 1024, diskFormat: diskFormat)
     try config.save(toURL: vmDir.configURL)
 
