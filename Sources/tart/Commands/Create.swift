@@ -19,6 +19,10 @@ struct Create: AsyncParsableCommand {
   @Flag(help: "create a Linux VM")
   var linux: Bool = false
 
+  @Flag(help: ArgumentHelp("Install Windows on a host-only network, with no Internet access",
+                           discussion: "Only with --from-iso. Requires macOS 26 Tahoe or later."))
+  var netHost: Bool = false
+
   @Option(help: ArgumentHelp("Disk size in GB"))
   var diskSize: UInt16 = 50
 
@@ -31,6 +35,9 @@ struct Create: AsyncParsableCommand {
     }
     if let fromISO = fromISO, !FileManager.default.fileExists(atPath: NSString(string: fromISO).expandingTildeInPath) {
       throw ValidationError("ISO file \"\(fromISO)\" does not exist")
+    }
+    if netHost && fromISO == nil {
+      throw ValidationError("--net-host only works with --from-iso")
     }
     #if arch(x86_64)
       if fromIPSW != nil || fromISO != nil {
@@ -78,7 +85,7 @@ struct Create: AsyncParsableCommand {
         if let fromISO = fromISO {
           let isoURL = URL(fileURLWithPath: NSString(string: fromISO).expandingTildeInPath)
 
-          try await WindowsInstaller(isoURL: isoURL).install(vmDir: tmpVMDir, diskSizeGB: diskSize, diskFormat: diskFormat)
+          try await WindowsInstaller(isoURL: isoURL, hostOnlyNetwork: netHost).install(vmDir: tmpVMDir, diskSizeGB: diskSize, diskFormat: diskFormat)
         }
       #endif
 
