@@ -46,7 +46,7 @@ rem Prefer Windows 11 Pro; single-edition ISOs such as Enterprise evaluation get
 set IMAGE=/Name:"Windows 11 Pro"
 dism /Get-ImageInfo /ImageFile:%WIM% %IMAGE% >nul 2>&1 || set IMAGE=/Index:1
 echo [%time%] applying image %IMAGE% >> %LOG%
-dism /Apply-Image /ImageFile:%WIM% %IMAGE% /ApplyDir:W:\ /Compact >> %LOG% 2>&1 || goto fail
+dism /Apply-Image /ImageFile:%WIM% %IMAGE% /ApplyDir:W:\ >> %LOG% 2>&1 || goto fail
 dism /Image:W:\ /Add-Driver /Driver:%T%\drivers /Recurse >> %LOG% 2>&1 || goto fail
 
 rem Windows Server's OOBE stops at a product key page, which Windows 11's doesn't. Standard and Datacenter get

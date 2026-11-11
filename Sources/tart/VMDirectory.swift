@@ -241,7 +241,8 @@ struct VMDirectory: Prunable {
   func resizeDisk(
     _ sizeGB: UInt16,
     format: DiskImageFormat = .raw,
-    contentStore: ContentStore? = nil
+    contentStore: ContentStore? = nil,
+    blank: Bool = false
   ) throws {
     if isStackedVM {
       // Resolve the stack before taking the config.json PID lock. Reading
@@ -277,7 +278,7 @@ struct VMDirectory: Prunable {
       try resizeExistingDisk(sizeGB)
     } else {
       // New disk - create it with the specified format
-      try createDisk(sizeGB: sizeGB, format: format)
+      try createDisk(sizeGB: sizeGB, format: format, blank: blank)
     }
   }
 
@@ -366,12 +367,12 @@ struct VMDirectory: Prunable {
     }
   }
 
-  private func createDisk(sizeGB: UInt16, format: DiskImageFormat) throws {
+  private func createDisk(sizeGB: UInt16, format: DiskImageFormat, blank: Bool) throws {
     switch format {
     case .raw:
       try createRawDisk(sizeGB: sizeGB)
     case .asif:
-      try Diskutil.imageCreate(diskURL: diskURL, sizeGB: sizeGB)
+      try Diskutil.imageCreate(diskURL: diskURL, sizeGB: sizeGB, blank: blank)
     }
   }
 

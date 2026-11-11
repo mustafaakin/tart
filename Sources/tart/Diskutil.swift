@@ -67,13 +67,14 @@ private struct DiskList: Codable {
 }
 
 struct Diskutil {
-  static func imageCreate(diskURL: URL, sizeGB: UInt16) throws {
+  // Without blank, the image comes with a partition map and an APFS volume
+  static func imageCreate(diskURL: URL, sizeGB: UInt16, blank: Bool = false) throws {
     do {
       _ = try run([
         "image", "create", "blank",
         "--format", "ASIF",
         "--size", "\(sizeGB)G",
-        "--volumeName", "Tart",
+      ] + (blank ? ["--fs", "None"] : ["--volumeName", "Tart"]) + [
         diskURL.path
       ])
     } catch {

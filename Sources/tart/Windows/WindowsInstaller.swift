@@ -5,6 +5,7 @@ import Virtualization
 // powers off, and then from the installed system, which completes setup and powers off again.
 struct WindowsInstaller {
   let isoURL: URL
+  var hostOnlyNetwork: Bool = false
 
   func install(vmDir: VMDirectory, diskSizeGB: UInt16, diskFormat: DiskImageFormat) async throws {
     try Windows.checkHostSupport()
@@ -29,14 +30,14 @@ struct WindowsInstaller {
                                                     windowsISO: isoURL, virtioWinISO: virtioWinISO, winFspMSI: winFspMSI)
 
     _ = try VZEFIVariableStore(creatingVariableStoreAt: vmDir.nvramURL)
-    try vmDir.resizeDisk(diskSizeGB, format: diskFormat)
+    try vmDir.resizeDisk(diskSizeGB, format: diskFormat, blank: true)
     let config = VMConfig(platform: Windows(), cpuCountMin: 4, memorySizeMin: 4096 * 1024 * 1024, diskFormat: diskFormat)
     try config.save(toURL: vmDir.configURL)
 
     defaultLogger.appendNewLine("Installing Windows...")
 
     let mediaDevice = VZUSBMassStorageDeviceConfiguration(attachment: try VZDiskImageStorageDeviceAttachment(url: media.url, readOnly: false))
-    try await runUntilGuestStops(try VM(vmDir: vmDir, additionalStorageDevices: [mediaDevice], audio: false, clipboard: false),
+    try await runUntilGuestStops(try VM(vmDir: vmDir, network: try network(), additionalStorageDevices: [mediaDevice], audio: false, clipboard: false),
                                  timeout: .seconds(30 * 60))
     try media.checkInstallationResult()
 
@@ -45,7 +46,19 @@ struct WindowsInstaller {
 
     defaultLogger.appendNewLine("Setting up Windows, this takes a while...")
 
-    try await runUntilGuestStops(try VM(vmDir: vmDir, audio: false, clipboard: false), timeout: .seconds(90 * 60))
+    try await runUntilGuestStops(try VM(vmDir: vmDir, network: try network(), audio: false, clipboard: false), timeout: .seconds(90 * 60))
+  }
+
+  private func network() throws -> Network {
+    guard hostOnlyNetwork else {
+      return NetworkShared()
+    }
+
+    guard #available(macOS 26, *) else {
+      throw RuntimeError.Generic("--net-host requires macOS 26 (Tahoe) or newer")
+    }
+
+    return try NetworkHost()
   }
 
   private func runUntilGuestStops(_ vm: VM, timeout: Duration) async throws {

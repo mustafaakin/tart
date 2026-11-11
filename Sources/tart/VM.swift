@@ -401,7 +401,7 @@ class VM: NSObject, VZVirtualMachineDelegate, ObservableObject {
     // When not specified, use "cached" caching mode for Linux VMs to prevent file-system corruption[1]
     //
     // [1]: https://github.com/cirruslabs/tart/pull/675
-    let cachingMode = caching ?? (vmConfig.os == .linux ? .cached : .automatic)
+    let cachingMode = caching ?? ((vmConfig.os == .linux || vmConfig.os == .windows) ? .cached : .automatic)
     let attachment: VZStorageDeviceAttachment
     if vmDir.isStackedVM {
       attachment = try vmDir.diskImageStack().makeAttachment(
@@ -418,7 +418,14 @@ class VM: NSObject, VZVirtualMachineDelegate, ObservableObject {
       )
     }
 
-    var devices: [VZStorageDeviceConfiguration] = [VZVirtioBlockDeviceConfiguration(attachment: attachment)]
+    var rootDevice: VZStorageDeviceConfiguration = VZVirtioBlockDeviceConfiguration(attachment: attachment)
+    // Experimental: Windows has its own NVMe driver. Set for both "tart create" and "tart run":
+    // Windows can't boot if the disk's controller changes after installing.
+    if #available(macOS 14, *), vmConfig.os == .windows,
+       ProcessInfo.processInfo.environment["TART_WINDOWS_NVME"] == "1" {
+      rootDevice = VZNVMExpressControllerDeviceConfiguration(attachment: attachment)
+    }
+    var devices: [VZStorageDeviceConfiguration] = [rootDevice]
     devices.append(contentsOf: additionalStorageDevices)
     configuration.storageDevices = devices
 
